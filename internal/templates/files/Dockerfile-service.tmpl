@@ -1,0 +1,63 @@
+# Multi-stage Dockerfile for {{.ProjectName}} service
+# Builds a production-ready containerized service
+
+# Stage 1: Builder
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache git make ca-certificates tzdata
+
+# Copy go module files
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
+# Copy source code
+COPY . .
+
+# Build the service binary
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
+    -ldflags '-extldflags "-static" -s -w' \
+    -o /app/bin/{{.ProjectName}} \
+    ./cmd/{{.ProjectName}}
+
+# Stage 2: Test (optional - use --target test)
+FROM builder AS test
+RUN go test -v ./...
+
+# Stage 3: Runtime
+FROM alpine:latest
+
+# Add ca-certificates for HTTPS and timezone data
+RUN apk --no-cache add ca-certificates tzdata
+
+WORKDIR /root/
+
+# Copy the binary from builder
+COPY --from=builder /app/bin/{{.ProjectName}} /usr/local/bin/{{.ProjectName}}
+
+# Copy any necessary config files (if they exist)
+COPY --from=builder /app/configs/* /etc/{{.ProjectName}}/ 2>/dev/null || true
+
+# Create non-root user
+RUN addgroup -g 1000 {{.ProjectName}} && \
+    adduser -D -u 1000 -G {{.ProjectName}} {{.ProjectName}}
+
+USER {{.ProjectName}}
+
+# Expose default port (adjust as needed)
+EXPOSE 8080
+
+# Health check (adjust endpoint as needed)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+# Run the service
+CMD ["{{.ProjectName}}"]
+
+# Usage:
+# Build production image:  docker build -t {{.ProjectName}}:latest .
+# Run tests:               docker build --target test -t {{.ProjectName}}:test .
+# Run the service:         docker run -p 8080:8080 {{.ProjectName}}:latest
+# Run with env vars:       docker run -p 8080:8080 -e ENV=production {{.ProjectName}}:latest

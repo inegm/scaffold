@@ -1,0 +1,63 @@
+# {{.ProjectName}}
+
+## Overview
+
+{{.ProjectName}} is a Go project following the standard project layout.
+
+## Project Structure
+
+This project follows the [golang-standards/project-layout](https://github.com/golang-standards/project-layout) structure:
+
+- `/cmd` - Main applications for this project
+- `/internal` - Private application and library code
+{{- if ne .Type "library"}}
+- `/pkg` - Library code that's ok to use by external applications
+{{- end}}
+- `/api` - API definitions (OpenAPI/Swagger specs, protocol definitions)
+- `/configs` - Configuration file templates
+- `/scripts` - Scripts for build, install, analysis, etc.
+- `/build` - Packaging and continuous integration
+- `/deployments` - Deployment configurations
+- `/test` - Additional external test apps and test data
+- `/docs` - Design and user documents
+- `/examples` - Examples for your applications and/or libraries
+
+## Getting Started
+
+### Prerequisites
+
+- Go 1.21 or higher
+
+### Installation
+
+```bash
+go build -o bin/{{.ProjectName}} ./cmd/{{.ProjectName}}
+```
+
+### Usage
+
+```bash
+./bin/{{.ProjectName}}
+```
+
+## Development
+
+### Running Tests
+
+```bash
+go test ./...
+```
+
+### Building
+
+```bash
+make build
+```
+
+## License
+
+{{.License}}
+
+## Author
+
+{{.Author}}

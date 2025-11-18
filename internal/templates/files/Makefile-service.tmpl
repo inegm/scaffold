@@ -1,0 +1,73 @@
+.PHONY: build clean test run install deps lint coverage docker-build docker-run docker-stop help
+
+BINARY_NAME={{.ProjectName}}
+BUILD_DIR=bin
+CMD_DIR=./cmd/{{.ProjectName}}
+DOCKER_IMAGE={{.ProjectName}}
+DOCKER_TAG=latest
+
+all: test build
+
+build:
+	@echo "Building..."
+	@go build -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
+
+clean:
+	@echo "Cleaning..."
+	@go clean
+	@rm -rf $(BUILD_DIR)
+
+test:
+	@echo "Testing..."
+	@go test -v ./...
+
+run: build
+	@echo "Running service..."
+	@./$(BUILD_DIR)/$(BINARY_NAME)
+
+install:
+	@echo "Installing..."
+	@go install $(CMD_DIR)
+
+deps:
+	@echo "Downloading dependencies..."
+	@go mod download
+	@go mod tidy
+
+lint:
+	@echo "Running linters..."
+	@golangci-lint run ./...
+
+coverage:
+	@echo "Generating coverage report..."
+	@go test -coverprofile=coverage.out ./...
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+docker-build:
+	@echo "Building Docker image..."
+	@docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+
+docker-run:
+	@echo "Running Docker container..."
+	@docker run -d --name $(BINARY_NAME) -p 8080:8080 $(DOCKER_IMAGE):$(DOCKER_TAG)
+
+docker-stop:
+	@echo "Stopping Docker container..."
+	@docker stop $(BINARY_NAME) || true
+	@docker rm $(BINARY_NAME) || true
+
+help:
+	@echo "Available targets:"
+	@echo "  build        - Build the service binary"
+	@echo "  run          - Build and run the service"
+	@echo "  test         - Run tests"
+	@echo "  install      - Install binary to GOPATH"
+	@echo "  deps         - Download and tidy dependencies"
+	@echo "  lint         - Run linters"
+	@echo "  coverage     - Generate test coverage report"
+	@echo "  docker-build - Build Docker image"
+	@echo "  docker-run   - Run service in Docker container"
+	@echo "  docker-stop  - Stop and remove Docker container"
+	@echo "  clean        - Remove build artifacts"
+	@echo "  help         - Show this help message"

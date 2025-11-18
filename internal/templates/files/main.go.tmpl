@@ -1,0 +1,27 @@
+package main
+
+import (
+	"fmt"
+{{- if eq .Type "cli"}}
+	"os"
+{{- end}}
+)
+
+func main() {
+{{- if eq .Type "cli"}}
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	fmt.Println("{{.ProjectName}} is running!")
+	return nil
+{{- else if eq .Type "service"}}
+	fmt.Println("{{.ProjectName}} service starting...")
+	// TODO: Initialize your service here
+{{- else}}
+	fmt.Println("{{.ProjectName}} library")
+{{- end}}
+}
